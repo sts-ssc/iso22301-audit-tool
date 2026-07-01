@@ -942,50 +942,59 @@ export default function AuditApp() {
         </div>
 
         {/* Erläuterung */}
-        <button
-          onClick={() => setErlOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
-          style={{ background: "none", border: "none", color: "#555", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, marginBottom: 4 }}
-        >
-          {eOpen ? "▾" : "▸"} Erläuterungen {eOpen ? "ausblenden" : "anzeigen"}
-        </button>
-        {eOpen && (
-          <div
-            style={{
-              fontSize: 12,
-              fontFamily: FONT,
-              color: "#444",
-              background: "#F7F5FF",
-              border: "1px solid #D8D0F0",
-              borderRadius: 6,
-              padding: "8px 12px",
-              marginBottom: 8,
-              lineHeight: 1.6,
-            }}
+        <div style={{ marginBottom: 4 }}>
+          <button
+            onClick={() => setErlOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
+            style={{ background: "none", border: "none", color: "#555", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, display: "block" }}
           >
-            {c.erl || "–"}
-          </div>
-        )}
+            {eOpen ? "▾" : "▸"} Erläuterungen {eOpen ? "ausblenden" : "anzeigen"}
+          </button>
+          {eOpen && (
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily: FONT,
+                color: "#444",
+                background: "#F7F5FF",
+                border: "1px solid #D8D0F0",
+                borderRadius: 6,
+                padding: "8px 12px",
+                marginTop: 6,
+                lineHeight: 1.6,
+              }}
+            >
+              {c.erl || "–"}
+            </div>
+          )}
+        </div>
 
         {/* Prüfhinweise */}
-        <button
-          onClick={() => setHintOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
-          style={{ background: "none", border: "none", color: "#888", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, marginBottom: 4 }}
-        >
-          {hOpen ? "▾" : "▸"} Prüfhinweise {hOpen ? "ausblenden" : "anzeigen"}
-        </button>
-        {hOpen && (
-          <div
-            style={{
-              fontSize: 12,
-              fontFamily: FONT,
-              color: "#777",
-              fontStyle: "italic",
-              marginBottom: 10,
-            }}
+        <div style={{ marginBottom: 12 }}>
+          <button
+            onClick={() => setHintOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
+            style={{ background: "none", border: "none", color: "#888", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, display: "block" }}
           >
-            {c.hint}
-          </div>
-        )}
+            {hOpen ? "▾" : "▸"} Prüfhinweise {hOpen ? "ausblenden" : "anzeigen"}
+          </button>
+          {hOpen && (
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily: FONT,
+                color: "#555",
+                fontStyle: "italic",
+                background: "#F5F7FA",
+                border: "1px solid #D0D8E4",
+                borderRadius: 6,
+                padding: "8px 12px",
+                marginTop: 6,
+                lineHeight: 1.6,
+              }}
+            >
+              {c.hint}
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -1120,11 +1129,19 @@ export default function AuditApp() {
     const overallAvg = avgRating(allCtrls);
     const naCount = allCtrls.filter((c) => answers[c.id]?.rating === "na").length;
     const unratedCount = allCtrls.filter((c) => !isAnswered(c.id)).length;
+    const unratedColor = "#C8D0DC"; // neutrales Blaugrau – kein Reifegradton
 
-    const distSegments = [0, 1, 2, 3, 4, 5].map((v) => {
-      const count = allCtrls.filter((c) => Number(answers[c.id]?.rating) === v && answers[c.id]?.rating !== "na").length;
-      return { value: allCtrls.length ? count / allCtrls.length : 0, color: ratingColorFn(v) };
-    });
+    const distSegments = [
+      // Unbeantwortete zuerst (neutral grau)
+      { value: allCtrls.length ? unratedCount / allCtrls.length : 0, color: unratedColor },
+      // Dann N/A
+      { value: allCtrls.length ? allCtrls.filter((c) => answers[c.id]?.rating === "na").length / allCtrls.length : 0, color: ratingColorFn("na") },
+      // Dann Reifegrade 0–5
+      ...[0, 1, 2, 3, 4, 5].map((v) => {
+        const count = allCtrls.filter((c) => answers[c.id]?.rating !== "na" && Number(answers[c.id]?.rating) === v && isAnswered(c.id)).length;
+        return { value: allCtrls.length ? count / allCtrls.length : 0, color: ratingColorFn(v) };
+      }),
+    ];
 
     let filteredList = allCtrls;
     if (dashGlobalFilter !== "all") {
@@ -1405,7 +1422,7 @@ export default function AuditApp() {
                   </div>
 
                   {/* Manuelle Notiz */}
-                  <div style={{ marginBottom: 10 }}>
+                  <div style={{ marginBottom: 4 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#444", fontFamily: FONT, marginBottom: 4 }}>
                       📝 Interne Notiz / Ergänzung
                     </div>
@@ -1416,31 +1433,6 @@ export default function AuditApp() {
                       onChange={(e) => updateActionPlan(c.id, "note", e.target.value)}
                     />
                   </div>
-
-                  {/* KI-Beurteilung (Reifegrad + Begründung + Risiko) */}
-                  {(rr.kiRg != null || rr.beg || rr.risk) && (
-                    <div
-                      style={{
-                        background: "#F5F0FF",
-                        border: "1px solid #C4A8F0",
-                        borderRadius: 6,
-                        padding: "8px 10px",
-                      }}
-                    >
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#5B2D8E", fontFamily: FONT, marginBottom: 6 }}>
-                        🤖 KI-BEURTEILUNG
-                      </div>
-                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: rr.risk ? 6 : 0 }}>
-                        <Badge value={rr.kiRg} />
-                        <div style={{ fontSize: 12, fontFamily: FONT, color: "#333", flex: 1 }}>{rr.beg || "–"}</div>
-                      </div>
-                      {rr.risk && (
-                        <div style={{ fontSize: 12, fontFamily: FONT, color: "#A32D2D", marginTop: 4 }}>
-                          <b>Risiko:</b> {rr.risk}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
                 );
               })}
