@@ -405,6 +405,7 @@ export default function AuditApp() {
   const [dashGlobalFilter, setDashGlobalFilter] = useState("all");
   const [dashDomainFilter, setDashDomainFilter] = useState({ domain: null, value: "all" });
   const [hintOpen, setHintOpen] = useState({});
+  const [erlOpen, setErlOpen] = useState({});
   const [auditFilter, setAuditFilter] = useState("all"); // "all" | "open" | 0..5 | "na"
 
   const fileInputRef = useRef(null);
@@ -903,7 +904,8 @@ export default function AuditApp() {
     const rr = riskRec[c.id] || {};
     const loading = !!loadingIds[c.id];
     const warn = !!warnIds[c.id];
-    const open = !!hintOpen[c.id];
+    const hOpen = !!hintOpen[c.id];
+    const eOpen = !!erlOpen[c.id];
     const color = DC[c.domain];
 
     return (
@@ -930,7 +932,7 @@ export default function AuditApp() {
           style={{
             borderLeft: `3px solid ${color}`,
             paddingLeft: 12,
-            marginBottom: 8,
+            marginBottom: 10,
             fontSize: 13,
             color: "#333",
             fontFamily: FONT,
@@ -939,30 +941,46 @@ export default function AuditApp() {
           {c.q}
         </div>
 
+        {/* Erläuterung */}
         <button
-          onClick={() => setHintOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#888",
-            fontSize: 12,
-            fontFamily: FONT,
-            cursor: "pointer",
-            padding: 0,
-            marginBottom: 10,
-          }}
+          onClick={() => setErlOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
+          style={{ background: "none", border: "none", color: "#555", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, marginBottom: 4 }}
         >
-          {open ? "▾" : "▸"} Prüfhinweise {open ? "ausblenden" : "anzeigen"}
+          {eOpen ? "▾" : "▸"} Erläuterungen {eOpen ? "ausblenden" : "anzeigen"}
         </button>
-        {open && (
+        {eOpen && (
           <div
             style={{
               fontSize: 12,
-              color: "#777",
               fontFamily: FONT,
+              color: "#444",
+              background: "#F7F5FF",
+              border: "1px solid #D8D0F0",
+              borderRadius: 6,
+              padding: "8px 12px",
+              marginBottom: 8,
+              lineHeight: 1.6,
+            }}
+          >
+            {c.erl || "–"}
+          </div>
+        )}
+
+        {/* Prüfhinweise */}
+        <button
+          onClick={() => setHintOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
+          style={{ background: "none", border: "none", color: "#888", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, marginBottom: 4 }}
+        >
+          {hOpen ? "▾" : "▸"} Prüfhinweise {hOpen ? "ausblenden" : "anzeigen"}
+        </button>
+        {hOpen && (
+          <div
+            style={{
+              fontSize: 12,
+              fontFamily: FONT,
+              color: "#777",
               fontStyle: "italic",
-              marginTop: -4,
-              marginBottom: 12,
+              marginBottom: 10,
             }}
           >
             {c.hint}
@@ -978,6 +996,7 @@ export default function AuditApp() {
             marginBottom: 6,
             fontFamily: FONT,
             textTransform: "uppercase",
+            marginTop: 4,
           }}
         >
           Reifegrad
@@ -1317,24 +1336,50 @@ export default function AuditApp() {
               <div style={{ fontSize: 14, fontWeight: 700, color: st.text, marginBottom: 8 }}>
                 {st.label} ({items.length})
               </div>
-              {items.map(({ c, a, ap }) => (
+              {items.map(({ c, a, ap }) => {
+                const rr = riskRec[c.id] || {};
+                return (
                 <div
                   key={c.id}
                   style={{
                     background: st.bg,
                     border: `1px solid ${st.border}`,
                     borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 8,
+                    padding: 14,
+                    marginBottom: 10,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0B3B5C" }}>
+                  {/* Header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0B3B5C", fontFamily: FONT }}>
                       {c.id} – {c.title}
                     </div>
                     <Badge value={a.rating} />
                   </div>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+
+                  {/* KI-Empfehlung als primäre Aktion */}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0F6E56", fontFamily: FONT, marginBottom: 4 }}>
+                      ✅ KI-EMPFEHLUNG (Massnahme)
+                    </div>
+                    <div
+                      style={{
+                        background: "#F0FAF5",
+                        border: "1px solid #9FD9BE",
+                        borderRadius: 6,
+                        padding: "8px 10px",
+                        fontSize: 12,
+                        fontFamily: FONT,
+                        color: "#1a3a5c",
+                        minHeight: 36,
+                      }}
+                    >
+                      {rr.rec || <span style={{ color: "#bbb" }}>Noch keine KI-Analyse vorhanden – im Fragebogen generieren.</span>}
+                    </div>
+                  </div>
+
+                  {/* Prio / Verantwortlich / Termin */}
+                  <div style={{ display: "flex", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                     <select
                       value={ap.prio || ""}
                       onChange={(e) => updateActionPlan(c.id, "prio", e.target.value ? Number(e.target.value) : undefined)}
@@ -1358,14 +1403,47 @@ export default function AuditApp() {
                       onChange={(e) => updateActionPlan(c.id, "due", e.target.value)}
                     />
                   </div>
-                  <textarea
-                    style={{ ...textareaInline, background: "#fff" }}
-                    placeholder="Massnahme / Notiz…"
-                    value={ap.note || ""}
-                    onChange={(e) => updateActionPlan(c.id, "note", e.target.value)}
-                  />
+
+                  {/* Manuelle Notiz */}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#444", fontFamily: FONT, marginBottom: 4 }}>
+                      📝 Interne Notiz / Ergänzung
+                    </div>
+                    <textarea
+                      style={{ ...textareaInline, background: "#fff", width: "100%" }}
+                      placeholder="Eigene Notiz, Ergänzung zur Massnahme…"
+                      value={ap.note || ""}
+                      onChange={(e) => updateActionPlan(c.id, "note", e.target.value)}
+                    />
+                  </div>
+
+                  {/* KI-Beurteilung (Reifegrad + Begründung + Risiko) */}
+                  {(rr.kiRg != null || rr.beg || rr.risk) && (
+                    <div
+                      style={{
+                        background: "#F5F0FF",
+                        border: "1px solid #C4A8F0",
+                        borderRadius: 6,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#5B2D8E", fontFamily: FONT, marginBottom: 6 }}>
+                        🤖 KI-BEURTEILUNG
+                      </div>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: rr.risk ? 6 : 0 }}>
+                        <Badge value={rr.kiRg} />
+                        <div style={{ fontSize: 12, fontFamily: FONT, color: "#333", flex: 1 }}>{rr.beg || "–"}</div>
+                      </div>
+                      {rr.risk && (
+                        <div style={{ fontSize: 12, fontFamily: FONT, color: "#A32D2D", marginTop: 4 }}>
+                          <b>Risiko:</b> {rr.risk}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           );
         })}
