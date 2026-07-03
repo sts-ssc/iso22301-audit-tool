@@ -406,6 +406,7 @@ export default function AuditApp() {
   const [dashDomainFilter, setDashDomainFilter] = useState({ domain: null, value: "all" });
   const [hintOpen, setHintOpen] = useState({});
   const [erlOpen, setErlOpen] = useState({});
+  const [wasOpen, setWasOpen] = useState({});
   const [auditFilter, setAuditFilter] = useState("all"); // "all" | "open" | 0..5 | "na"
 
   const fileInputRef = useRef(null);
@@ -964,6 +965,33 @@ export default function AuditApp() {
               }}
             >
               {c.erl || "–"}
+            </div>
+          )}
+        </div>
+
+        {/* Was wird gefordert? */}
+        <div style={{ marginBottom: 4 }}>
+          <button
+            onClick={() => setWasOpen((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
+            style={{ background: "none", border: "none", color: "#0B6E8A", fontSize: 12, fontFamily: FONT, cursor: "pointer", padding: 0, display: "block" }}
+          >
+            {wasOpen[c.id] ? "▾" : "▸"} Was wird gefordert? {wasOpen[c.id] ? "ausblenden" : "anzeigen"}
+          </button>
+          {wasOpen[c.id] && (
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily: FONT,
+                color: "#0B3B5C",
+                background: "#EDF5FF",
+                border: "1px solid #A8C8E8",
+                borderRadius: 6,
+                padding: "8px 12px",
+                marginTop: 6,
+                lineHeight: 1.6,
+              }}
+            >
+              {c.req || "–"}
             </div>
           )}
         </div>
